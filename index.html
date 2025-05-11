@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="my">
 <head>
     <meta charset="UTF-8">
@@ -14,6 +14,7 @@
             padding: 15px;
             background: #f0f2f5;
         }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -22,11 +23,13 @@
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+
         .form-section {
             display: grid;
             gap: 10px;
             margin-bottom: 20px;
         }
+
         input, select {
             padding: 12px;
             border: 1px solid #ddd;
@@ -35,6 +38,7 @@
             width: 100%;
             box-sizing: border-box;
         }
+
         button {
             padding: 12px 20px;
             border: none;
@@ -45,19 +49,29 @@
             cursor: pointer;
             transition: 0.3s;
         }
+
         button:hover {
             opacity: 0.9;
         }
+
+        .print-btn {
+            background: #008CBA;
+            margin-bottom: 20px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
+
         th, td {
             border: 1px solid #ddd;
             padding: 12px;
             text-align: left;
+            vertical-align: top;
         }
+
         .delete-btn {
             background: #ff4444;
             padding: 5px 10px;
@@ -65,12 +79,26 @@
             color: white;
             cursor: pointer;
         }
+
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
             }
             input, select {
                 font-size: 14px;
+            }
+        }
+
+        @media print {
+            button, .delete-btn {
+                display: none;
+            }
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
             }
         }
     </style>
@@ -95,9 +123,9 @@
                     <option value="night">ည</option>
                 </select>
                 <input type="time" id="entryTime">
-                <select id="tag"></select>
-                <button onclick="editTags()">Tag ပြင်ရန်</button>
+                <input type="date" id="entryDate">
                 <button onclick="addEntry()">အသစ်ထည့်မည်</button>
+                <button class="print-btn" onclick="window.print()">Print</button>
             </div>
 
             <table>
@@ -131,36 +159,6 @@
         const db = firebase.firestore();
 
         let records = {};
-        let tags = ['ဆေးမသောက်ခင်', 'ဆေးသောက်ပြီး'];
-
-        function populateTagDropdown() {
-            const tagSelect = document.getElementById('tag');
-            tagSelect.innerHTML = tags.map(tag => `<option value="${tag}">${tag}</option>`).join('');
-        }
-
-        function editTags() {
-            const input = prompt(`လက်ရှိ Tags: ${tags.join(', ')}\n\nအသစ်ထည့်ရန်: +နဲ့စပါ\nဖျက်ရန်: tag အမည်ကိုရိုက်ပါ\nဥပမာ: +အစာမစားခင်`);
-            if (input) {
-                if (input.startsWith('+')) {
-                    const newTag = input.slice(1).trim();
-                    if (newTag && !tags.includes(newTag)) {
-                        tags.push(newTag);
-                    }
-                } else {
-                    tags = tags.filter(tag => tag !== input.trim());
-                }
-                populateTagDropdown();
-                localStorage.setItem('bpTags', JSON.stringify(tags));
-            }
-        }
-
-        function loadSavedTags() {
-            const saved = localStorage.getItem('bpTags');
-            if (saved) {
-                tags = JSON.parse(saved);
-            }
-            populateTagDropdown();
-        }
 
         async function googleLogin() {
             try {
@@ -200,16 +198,15 @@
                 dia: document.getElementById('dia').value,
                 pulse: document.getElementById('pulse').value,
                 time: document.getElementById('entryTime').value,
-                timeSlot: document.getElementById('timeSlot').value,
-                tag: document.getElementById('tag').value
+                timeSlot: document.getElementById('timeSlot').value
             };
 
-            if (!entry.sys || !entry.dia) {
-                alert('ကျေးဇူးပြု၍ SYS နှင့် DIA ထည့်ပါ');
+            const date = document.getElementById('entryDate').value;
+            if (!entry.sys || !entry.dia || !date) {
+                alert('ကျေးဇူးပြု၍ SYS၊ DIA နှင့် ရက်စွဲ ထည့်ပါ');
                 return;
             }
 
-            const date = new Date().toISOString().split('T')[0];
             if (!records[date]) {
                 records[date] = { morning: [], noon: [], evening: [], night: [] };
             }
@@ -221,14 +218,14 @@
 
         function updateUI() {
             const tbody = document.getElementById('recordsBody');
-            tbody.innerHTML = Object.entries(records).map(([date, slots]) => `
+            tbody.innerHTML = Object.entries(records).sort().reverse().map(([date, slots]) => `
                 <tr>
                     <td>${new Date(date).toLocaleDateString('my-MM')}</td>
                     ${['morning', 'noon', 'evening', 'night'].map(slot => `
                         <td>${slots[slot].map(entry => `
                             <div style="margin: 5px 0;">
                                 ${entry.sys}/${entry.dia}/${entry.pulse}<br>
-                                <small>${entry.time} | ${entry.tag || ''}</small><br>
+                                <small>${entry.time}</small><br>
                                 <button class="delete-btn" onclick="deleteEntry('${date}','${slot}','${entry.id}')">ဖျက်</button>
                             </div>
                         `).join('') || '-'}</td>
@@ -248,12 +245,12 @@
         auth.onAuthStateChanged(user => {
             document.getElementById('loginSection').style.display = user ? 'none' : 'block';
             document.getElementById('appContent').style.display = user ? 'block' : 'none';
-            if (user) {
-                loadData();
-                loadSavedTags();
-            }
+            if (user) loadData();
         });
 
+        // Set default date & time on load
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('entryDate').value = today;
         document.getElementById('entryTime').value = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     </script>
 </body>
