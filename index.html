@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="my">
 <head>
     <meta charset="UTF-8">
@@ -123,10 +123,9 @@
                     <option value="night">ည</option>
                 </select>
                 <input type="time" id="entryTime">
-                <input type="date" id="entryDate"> 
-             
-             <button onclick="deleteAllData()" style="background: #d9534f;">အားလုံးဖျက်မည်</button>
+                <input type="date" id="entryDate">
 
+                <button onclick="deleteAllData()" style="background: #d9534f;">အားလုံးဖျက်မည်</button>
                 <button onclick="addEntry()">အသစ်ထည့်မည်</button>
                 <button class="print-btn" onclick="window.print()">Print</button>
             </div>
@@ -193,19 +192,20 @@
                 }
             }
         }
-async function deleteAllData() {
-    if (confirm("တကယ်အားလုံးဖျက်မှာသေချာပါသလား?")) {
-        const user = auth.currentUser;
-        if (user) {
-            records = {};
-            await db.collection('users').doc(user.uid).set({
-                records: {},
-                lastUpdated: new Date()
-            });
-            updateUI();
+
+        async function deleteAllData() {
+            if (confirm("တကယ်အားလုံးဖျက်မှာသေချာပါသလား?")) {
+                const user = auth.currentUser;
+                if (user) {
+                    records = {};
+                    await db.collection('users').doc(user.uid).set({
+                        records: {},
+                        lastUpdated: new Date()
+                    });
+                    updateUI();
+                }
+            }
         }
-    }
-}
 
         function addEntry() {
             const entry = {
@@ -267,7 +267,9 @@ async function deleteAllData() {
         // Set default date & time on load
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('entryDate').value = today;
-        document.getElementById('entryTime').value = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('entryTime').value = new Date().toLocaleTimeString('en-GB', {
+            hour: '2-digit', minute: '2-digit'
+        });
     </script>
 </body>
 </html>
